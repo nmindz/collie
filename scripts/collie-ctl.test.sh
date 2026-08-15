@@ -777,6 +777,69 @@ test_bun_resolution() {
   assert_eq "$(cut -d'|' -f1 "$calls")" "${CASE_DIR}/alt/bin/bun"
 }
 
+# A host whose ONLY Bun comes from a version manager. mise keeps tools under
+# `installs/<tool>/<version>/bin`, which no fixed list can guess, so resolution used to come up empty
+# — and the launchd agent, whose ProgramArguments re-resolve Bun in launchd's own minimal environment
+# on every launch, crash-looped: `error: bun not found on PATH` once per ThrottleInterval while
+# `status` reported "loaded, not running". MISE_DATA_DIR/XDG_DATA_HOME are scrubbed alongside
+# BUN_INSTALL for the same reason it is: a developer whose own shell exports them would otherwise
+# send the shim lookup outside the sandbox.
+test_bun_resolution_via_mise() {
+  setup_case bun-mise
+  ln -s "$(command -v dirname)" "${BIN_DIR}/dirname"
+  local calls="${CASE_DIR}/calls"
+  local data="${HOME_DIR}/.local/share/mise"
+  local concrete="${data}/installs/bun/1.3.14/bin/bun"
+  local shim="${data}/shims/bun"
+
+  install_fake_bun "$concrete" "$calls"
+  # `mise which bun` is the only thing that knows that path. The fake answers as mise does — including
+  # the unrelated "new version available" WARN it writes to stderr on every single call, which the
+  # resolver has to drop rather than mistake for the answer.
+  cat > "${BIN_DIR}/mise" <<EOF
+#!/bin/sh
+echo 'mise WARN  mise version 9.9.9 available' >&2
+if [ "\$1" = which ] && [ "\$2" = bun ]; then echo "$concrete"; exit 0; fi
+exit 1
+EOF
+  chmod +x "${BIN_DIR}/mise"
+
+  # No shim on disk yet, so the concrete path is all there is to hand back.
+  env -u BUN_INSTALL -u MISE_DATA_DIR -u XDG_DATA_HOME \
+    HOME="$HOME_DIR" HERDR_PLUGIN_CONFIG_DIR="$CONFIG_DIR" PATH="$BIN_DIR" \
+    /bin/bash "$CTL" push-test
+  assert_eq "$(cut -d'|' -f1 "$calls")" "$concrete"
+
+  # With a shim present it MUST win. The version is baked into the concrete path and `write_unit`
+  # bakes whatever we resolve into ExecStart, so choosing it would turn the operator's next
+  # `mise up bun` into a service that no longer starts. The shim re-resolves on every exec.
+  install_fake_bun "$shim" "$calls"
+  env -u BUN_INSTALL -u MISE_DATA_DIR -u XDG_DATA_HOME \
+    HOME="$HOME_DIR" HERDR_PLUGIN_CONFIG_DIR="$CONFIG_DIR" PATH="$BIN_DIR" \
+    /bin/bash "$CTL" push-test
+  assert_eq "$(cut -d'|' -f1 "$calls")" "$shim"
+  # …and its directory has to reach children, same as any other resolution: the Tailscale ownership
+  # probe and the processes `bun run build` spawns all look up a bare `bun` themselves.
+  case "$(cut -d'|' -f2- "$calls")" in
+    "${data}/shims:"*) ;;
+    *) fail "the mise shim directory never reached children on PATH" ;;
+  esac
+
+  # mise's config is directory-scoped, so a shim can sit on disk for a tool this directory does not
+  # actually provide. `mise which` declining is the answer — fall THROUGH to the guess-list instead of
+  # handing back a path that would only fail later, at exec time, inside the supervised service.
+  cat > "${BIN_DIR}/mise" <<'EOF'
+#!/bin/sh
+exit 1
+EOF
+  chmod +x "${BIN_DIR}/mise"
+  install_fake_bun "${HOME_DIR}/.bun/bin/bun" "$calls"
+  env -u BUN_INSTALL -u MISE_DATA_DIR -u XDG_DATA_HOME \
+    HOME="$HOME_DIR" HERDR_PLUGIN_CONFIG_DIR="$CONFIG_DIR" PATH="$BIN_DIR" \
+    /bin/bash "$CTL" push-test
+  assert_eq "$(cut -d'|' -f1 "$calls")" "${HOME_DIR}/.bun/bin/bun"
+}
+
 # `command -v` reports a function or alias as a BARE word, and the plugin .env is sourced before we
 # resolve — so a `bun()` defined there yields dirname `.`, and prepending that would hand every later
 # `git` / `systemctl` / `tailscale` a cwd-relative lookup. Only absolute paths reach PATH.
@@ -1010,6 +1073,7 @@ test_tailnet_acl_warning
 test_qr_subcommand
 test_launchd_bootstrap_retries
 test_bun_resolution
+test_bun_resolution_via_mise
 test_non_absolute_bun_never_reaches_path
 test_missing_bun_still_reports
 test_update_advances_a_herdr_managed_checkout
