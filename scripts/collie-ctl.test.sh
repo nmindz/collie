@@ -711,8 +711,20 @@ EOF
   # Transient: the window closes on the second try, and `start` reports success like any other.
   install_flaky_launchctl 1
   bash "$harness" > "${CASE_DIR}/retry.out" 2>&1 || fail "start gave up on a transient bootstrap failure"
-  assert_contains "$(cat "${CASE_DIR}/retry.out")" 'bridge started (launchd: herdr.collie)'
+  local retry_out; retry_out="$(cat "${CASE_DIR}/retry.out")"
+  assert_contains "$retry_out" 'bridge started (launchd: herdr.collie)'
   assert_eq "$(grep -c '^bootstrap ' "$LAUNCHCTL_CALLS")" 2
+  # launchctl's own words must NOT reach the operator on a start that then succeeded: printed above
+  # a ✓ banner and a live pid they read as a broken start, and `restart` (so `update`) always
+  # bootstraps into a teardown, making this the common path rather than the rare one. Its advice is
+  # the specific harm — `sudo launchctl bootstrap` targets the ROOT domain, so an operator who
+  # follows it loads a second agent as the wrong user while the real one keeps running.
+  case "$retry_out" in
+    *"Bootstrap failed"*) fail "launchctl's failure text leaked on a start that recovered" ;;
+    *"as root"*) fail "launchctl's run-as-root advice leaked on a start that recovered" ;;
+  esac
+  # Recovered is not the same as clean, and the note is what makes a slow teardown correlatable.
+  assert_contains "$retry_out" 'raced the previous agent'
 
   # Permanent: EIO is also how launchd reports "gui/<uid> doesn't exist", which is every Mac
   # administered purely over SSH — no console session, so no domain to bootstrap into, ever. Those
@@ -726,6 +738,13 @@ EOF
   assert_contains "$out" 'warn: launchctl bootstrap failed after 3 attempts'
   assert_contains "$out" 'no console login'
   assert_contains "$out" 'unsupervised'
+  # Deferred, not discarded: when we actually give up, launchctl's own text is the operator's best
+  # clue about WHY the domain refused, so it has to survive the suppression above.
+  assert_contains "$out" 'Bootstrap failed: 5: Input/output error'
+  # And the retry note must not appear on a run that never recovered.
+  case "$out" in
+    *'raced the previous agent'*) fail "claimed a successful retry on a start that gave up" ;;
+  esac
   # It must NOT claim the agent is running — the operator has to know supervision is absent.
   case "$out" in
     *"bridge started (launchd:"*) fail "reported a launchd start after bootstrap failed" ;;

@@ -535,10 +535,26 @@ cmd_start() {
     # remove, on the path (`restart`, and so `update`) an operator hits most. Retry across the
     # window. A real refusal still surfaces — EIO is also what launchd returns when `gui/<uid>`
     # doesn't exist at all, which is why the give-up message names that case.
-    local attempt supervised=1
+    #
+    # launchctl's own stderr is CAPTURED rather than let through, because on the retried-and-
+    # recovered path it is pure misinformation: a bare "Bootstrap failed: 5: Input/output error"
+    # prints above a ✓ banner and a running pid, which reads as a broken start on the single most
+    # common path there is (`restart`, and so `update`, always bootstraps into a teardown). Its
+    # suggestion — "Try re-running the command as root" — is worse than noise here: `sudo` bootstraps
+    # into the ROOT domain, so following it loads a second agent as the wrong user and leaves the
+    # real one untouched. The text is not discarded, only deferred: it is printed verbatim if we
+    # exhaust the retries, where it is the operator's best clue.
+    local attempt supervised=1 boot_err=""
     for attempt in 1 2 3; do
-      if launchctl bootstrap "$(launchd_domain)" "$AGENT_FILE"; then break; fi
+      if boot_err="$(launchctl bootstrap "$(launchd_domain)" "$AGENT_FILE" 2>&1)"; then
+        # Say that it took a retry rather than swallowing the fact — a silent recovery is
+        # indistinguishable from a first-try success, and this one is worth being able to correlate
+        # with a slow teardown later.
+        [ "$attempt" -eq 1 ] || echo "note: launchctl bootstrap raced the previous agent's teardown; retried and succeeded." >&2
+        break
+      fi
       if [ "$attempt" -eq 3 ]; then
+        if [ -n "$boot_err" ]; then printf '%s\n' "$boot_err" >&2; fi
         # Out of retries. The likeliest cause is not a race at all: `gui/<uid>` exists only with a
         # console session, so a Mac administered purely over SSH has no domain to bootstrap into and
         # never will. Exiting here would leave that host with NO bridge — cmd_stop already killed the
