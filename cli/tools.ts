@@ -10,5 +10,6 @@ export {
   findIn,
   findTool,
   isExecutableFile,
+  miseShimsDir,
   searchDirs,
 } from "../bridge/tools.ts";

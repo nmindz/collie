@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { fallbackDirs, findIn, findTool, searchDirs } from "./tools.ts";
+import { fallbackDirs, findIn, findTool, miseShimsDir, searchDirs } from "./tools.ts";
 
 // The whole reason this module exists: Herdr spawns plugin actions with no login shell, so PATH may
 // be minimal or absent (the pre-shim collie-ctl.sh). PATH is a hint here, never the mechanism.
@@ -36,6 +36,44 @@ describe("searchDirs", () => {
   test("a dir named twice is searched once", () => {
     const dirs = searchDirs("/usr/bin:/usr/bin", HOME);
     expect(dirs.filter((d) => d === "/usr/bin")).toHaveLength(1);
+  });
+});
+
+describe("miseShimsDir", () => {
+  // The one location that is NOT guessable from the tool: mise keeps the real binaries under
+  // `installs/<tool>/<version>/bin`, so a mise-only host resolved `bun` to nothing and every verb
+  // that spawns it (`build`, `update`) failed on a box where `bun` worked in the operator's shell.
+  test("defaults to mise's own default under the resolved home", () => {
+    expect(miseShimsDir({}, HOME)).toBe(`${HOME}/.local/share/mise/shims`);
+  });
+
+  test("MISE_DATA_DIR wins over XDG_DATA_HOME, which wins over the default", () => {
+    expect(miseShimsDir({ XDG_DATA_HOME: "/xdg" }, HOME)).toBe("/xdg/mise/shims");
+    expect(miseShimsDir({ MISE_DATA_DIR: "/md", XDG_DATA_HOME: "/xdg" }, HOME)).toBe("/md/shims");
+  });
+
+  test("an override that is present but empty names no location", () => {
+    // `MISE_DATA_DIR=` is how a caller scrubs it; treating "" as a path would search `/shims`.
+    expect(miseShimsDir({ MISE_DATA_DIR: "", XDG_DATA_HOME: "" }, HOME)).toBe(
+      `${HOME}/.local/share/mise/shims`,
+    );
+  });
+
+  test("the shims dir is searched, ahead of a possibly-stale ~/.bun", () => {
+    const dirs = fallbackDirs(HOME);
+    expect(dirs).toContain(`${HOME}/.local/share/mise/shims`);
+    expect(dirs.indexOf(`${HOME}/.local/share/mise/shims`)).toBeLessThan(
+      dirs.indexOf(`${HOME}/.bun/bin`),
+    );
+  });
+
+  test("findTool reaches a tool that ONLY the shims dir provides, with no PATH at all", () => {
+    const shim = `${HOME}/.local/share/mise/shims/bun`;
+    expect(findIn("bun", searchDirs(undefined, HOME), (p) => p === shim)).toBe(shim);
+  });
+
+  test("the overrides reach the search list, not just the helper", () => {
+    expect(searchDirs(undefined, HOME, { MISE_DATA_DIR: "/md" })).toContain("/md/shims");
   });
 });
 

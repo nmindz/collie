@@ -17,10 +17,46 @@ import { isAbsolute, join } from "node:path";
 // ABSOLUTE entries only. An empty or relative PATH entry means "the current directory" — resolving
 // a tool through it would let whatever directory we happen to be in supply `git`.
 
-/** Absolute directories searched after PATH. `home` is the resolved home dir, never `$HOME` raw. */
-export function fallbackDirs(home: string): string[] {
+/** An override that is present but empty names no location — treat it as unset, as the shell does. */
+function nonEmpty(value: string | undefined): string | undefined {
+  return value !== undefined && value.length > 0 ? value : undefined;
+}
+
+/**
+ * The mise shims directory — a version manager's stable name for every tool it manages.
+ *
+ * It has to be named explicitly because it is the one location that is NOT guessable from the tool:
+ * mise keeps the real binaries under `installs/<tool>/<version>/bin`, so a host whose only Bun comes
+ * from mise resolved to nothing here, and `collie build` — which spawns `bun install` and
+ * `bun run typecheck` through this very seam — failed on a box where `bun` works fine in the
+ * operator's own shell. `scripts/collie-ctl.sh` asks mise the same question for the same reason; the
+ * shim covers the bootstrap, this covers every verb the binary implements once it exists.
+ *
+ * The SHIMS dir rather than the versioned install dir, exactly as the bootstrap prefers it: a shim is
+ * a stable name that re-resolves per exec, so it survives the operator's next `mise up bun`, and it
+ * needs neither mise on PATH nor an activated shell. MISE_DATA_DIR then XDG_DATA_HOME, in mise's own
+ * order of precedence.
+ */
+export function miseShimsDir(env: Record<string, string | undefined>, home: string): string {
+  const dataHome = nonEmpty(env.XDG_DATA_HOME) ?? join(home, ".local", "share");
+  return join(nonEmpty(env.MISE_DATA_DIR) ?? join(dataHome, "mise"), "shims");
+}
+
+/**
+ * Absolute directories searched after PATH. `home` is the resolved home dir, never `$HOME` raw.
+ *
+ * `env` is optional because most of this list does not depend on it; it feeds
+ * {@link miseShimsDir}'s two overrides, and an absent env just means their defaults.
+ */
+export function fallbackDirs(
+  home: string,
+  env: Record<string, string | undefined> = {},
+): string[] {
   return [
     join(home, ".local", "bin"),
+    // Ahead of `~/.bun/bin`: a mise-managed Bun is the one the operator actually uses, so it has to
+    // outrank a stale `~/.bun` left behind by an old curl install.
+    miseShimsDir(env, home),
     join(home, ".bun", "bin"),
     join(home, ".cargo", "bin"),
     "/usr/local/bin",
@@ -34,13 +70,17 @@ export function fallbackDirs(home: string): string[] {
 }
 
 /** The full search list: absolute PATH entries first (if any), then {@link fallbackDirs}. */
-export function searchDirs(path: string | undefined, home: string): string[] {
+export function searchDirs(
+  path: string | undefined,
+  home: string,
+  env: Record<string, string | undefined> = {},
+): string[] {
   const fromPath = (path ?? "")
     .split(":")
     .map((d) => d.trim())
     .filter((d) => d.length > 0 && isAbsolute(d));
   const seen = new Set<string>();
-  return [...fromPath, ...fallbackDirs(home)].filter((d) => {
+  return [...fromPath, ...fallbackDirs(home, env)].filter((d) => {
     if (seen.has(d)) return false;
     seen.add(d);
     return true;
@@ -85,5 +125,5 @@ export function findTool(
   home: string,
 ): string | null {
   if (isAbsolute(name)) return isExecutableFile(name) ? name : null;
-  return findIn(name, searchDirs(env.PATH, home), isExecutableFile);
+  return findIn(name, searchDirs(env.PATH, home, env), isExecutableFile);
 }
