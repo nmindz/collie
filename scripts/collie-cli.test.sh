@@ -1083,7 +1083,12 @@ U_HERDR="${TMP_ROOT}/update-herdr-calls"
 ORIGIN="${U_DIR}/origin"
 mkdir -p "$U_DIR" "$U_BIN"
 
-git_q() { git -c init.defaultBranch=main -c user.email=t@t -c user.name=t -c commit.gpgsign=false "$@"; }
+# `tag.gpgSign=false` alongside `commit.gpgsign=false`, and for the same reason: an operator who
+# signs by default (`tag.gpgSign = true` in ~/.gitconfig) otherwise turns the lightweight tags below
+# into SIGNED ones, which need a message — so git opens $EDITOR on a non-tty and the suite dies with
+# `fatal: no tag message?`, or hangs waiting on a locked GPG agent. A test fixture must never reach
+# for the operator's key.
+git_q() { git -c init.defaultBranch=main -c user.email=t@t -c user.name=t -c commit.gpgsign=false -c tag.gpgSign=false "$@"; }
 
 # An upstream with two commits: the release the checkout is on, and the one it must advance to.
 mkdir -p "$ORIGIN"

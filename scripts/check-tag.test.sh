@@ -47,6 +47,10 @@ setup_case() {
   git -C "$case_dir" config user.email t@example.com
   git -C "$case_dir" config user.name Test
   git -C "$case_dir" config commit.gpgsign false
+  # And tags: the cases below create annotated ones, which an operator with `tag.gpgSign = true`
+  # would have signed with their real key — a prompt, a hang, or a failure, none of them this
+  # test's subject.
+  git -C "$case_dir" config tag.gpgSign false
 }
 
 # Write both version surfaces at one version and commit them under the given subject.
