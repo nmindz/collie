@@ -26,7 +26,10 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     css: false,
-    setupFiles: ["./src/test/setup.ts"],
+    // node-localstorage.ts FIRST and deliberately so: it repairs the `localStorage` global that
+    // Node 26 shadows, and `src/lib/*` reads that global at MODULE scope — so the repair has to land
+    // before setup.ts's own `@/lib/*` imports are evaluated, not in a `beforeEach`.
+    setupFiles: ["./src/test/node-localstorage.ts", "./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
 });
