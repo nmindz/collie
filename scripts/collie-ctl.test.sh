@@ -54,6 +54,10 @@ setup_case() {
   for tool in bash dirname cp chmod; do
     ln -sf "$(command -v "$tool")" "${BIN_DIR}/${tool}"
   done
+  # A mise that answers "no Bun here", so a developer's real mise never resolves their real Bun.
+  # `test_bun_resolution_via_mise` overwrites it with one that answers.
+  printf '#!/bin/sh\nexit 1\n' > "${BIN_DIR}/mise"
+  chmod +x "${BIN_DIR}/mise"
 }
 
 # The binary the shim is supposed to hand over to: records its argv and the environment it was given.
@@ -87,6 +91,21 @@ chmod +x "$COLLIE_BIN"
 exit 0
 EOF
   chmod +x "$target"
+}
+
+# PATH holding only the scratch dir (a Herdr action's environment), with BUN_INSTALL and mise's two
+# data-dir overrides scrubbed so no lookup leaves the sandbox.
+run_shim_sandboxed() {
+  local rc=0
+  set +e
+  env -u BUN_INSTALL -u MISE_DATA_DIR -u XDG_DATA_HOME \
+    HOME="$HOME_DIR" PATH="$BIN_DIR" bash "$SHIM" "$@" \
+    > "${CASE_DIR}/out" 2> "${CASE_DIR}/err"
+  rc=$?
+  set -e
+  OUT="$(cat "${CASE_DIR}/out")"
+  ERR="$(cat "${CASE_DIR}/err")"
+  return "$rc"
 }
 
 run_shim() {
@@ -238,6 +257,46 @@ test_bun_resolution() {
   assert_contains "$(cat "$CALLS")" "bun-path=${CASE_DIR}/alt/bin/bun"
 }
 
+# A host whose ONLY Bun comes from mise, under a versioned path no fixed list can guess.
+test_bun_resolution_via_mise() {
+  setup_case bun-mise
+  local data="${HOME_DIR}/.local/share/mise"
+  local concrete="${data}/installs/bun/1.3.14/bin/bun"
+  local shim="${data}/shims/bun"
+
+  install_fake_bun "$concrete"
+  # Answers as mise does, including the stderr WARN the resolver must not mistake for the answer.
+  cat > "${BIN_DIR}/mise" <<EOF
+#!/bin/sh
+echo 'mise WARN  mise version 9.9.9 available' >&2
+if [ "\$1" = which ] && [ "\$2" = bun ]; then echo "$concrete"; exit 0; fi
+exit 1
+EOF
+  chmod +x "${BIN_DIR}/mise"
+
+  # No shim on disk yet, so the concrete path is all there is to hand back.
+  run_shim_sandboxed status || fail "the shim found no mise-managed Bun: ${ERR}"
+  assert_contains "$(cat "$CALLS")" "bun-path=${concrete}"
+
+  # With a shim present it MUST win: the concrete path goes stale on the next `mise up bun`.
+  rm -f "$COLLIE_BIN"
+  : > "$CALLS"
+  install_fake_bun "$shim"
+  run_shim_sandboxed status || fail "the shim did not prefer the mise shim: ${ERR}"
+  assert_contains "$(cat "$CALLS")" "bun-path=${shim}"
+  # …and its directory reaches children, which look up a bare `bun` themselves.
+  assert_contains "$(grep '^bun-PATH=' "$CALLS" | head -1)" "${data}/shims"
+
+  # A declining `mise which` (directory-scoped config) falls THROUGH to the candidate list.
+  rm -f "$COLLIE_BIN"
+  : > "$CALLS"
+  printf '#!/bin/sh\nexit 1\n' > "${BIN_DIR}/mise"
+  chmod +x "${BIN_DIR}/mise"
+  install_fake_bun "${HOME_DIR}/.bun/bin/bun"
+  run_shim_sandboxed status || fail "a declining mise did not fall through: ${ERR}"
+  assert_contains "$(cat "$CALLS")" "bun-path=${HOME_DIR}/.bun/bin/bun"
+}
+
 # `command -v` reports a function or alias as a BARE word, so a `bun()` in whatever sourced us yields
 # dirname `.` — and prepending that would hand every later lookup a cwd-relative resolution. Only
 # absolute paths reach PATH.
@@ -287,8 +346,10 @@ test_bootstrap_builds_a_missing_binary
 test_bootstrap_failure_names_the_fix
 test_bootstrap_without_bun_reports_it
 test_bun_resolution
+test_bun_resolution_via_mise
 test_non_absolute_bun_never_reaches_path
 test_sourced_guard_stops_before_the_exec
 
 echo "✓ collie-ctl shim: argv + env passthrough, exit-code propagation, frozen action verbs"
 echo "✓ collie-ctl shim: bootstrap from source, its two failure messages, Bun resolution, sourced guard"
+echo "✓ collie-ctl shim: a mise-only host resolves Bun — shim over concrete path, decline falls through"

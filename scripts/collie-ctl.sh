@@ -22,7 +22,41 @@ set -euo pipefail
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COLLIE_BIN="${PLUGIN_ROOT}/bin/collie"
 
-# Find Bun on PATH, then in the usual install locations.
+# A Bun only mise knows about: its `installs/<tool>/<version>/bin` path is unguessable. mise itself
+# is found like Bun (absolute paths only: `mise activate` defines a shell function), `mise which`
+# confirms this directory provides Bun, and the stable shim wins over the version-pinned path.
+resolve_mise_bun() {
+  local mise="" candidate m resolved shim
+  candidate="$(command -v mise 2>/dev/null || true)"
+  case "$candidate" in
+    /*) mise="$candidate" ;;
+  esac
+  if [ -z "$mise" ]; then
+    # Its own loop variable: `cli/sys.test.ts` reads the first `candidate` loop as resolve_bun's list.
+    for m in \
+      "${HOME}/.local/bin/mise" \
+      /opt/homebrew/bin/mise \
+      /usr/local/bin/mise; do
+      if [ -x "$m" ]; then
+        mise="$m"
+        break
+      fi
+    done
+  fi
+  [ -n "$mise" ] || return 0
+  # stderr dropped: mise prints an unrelated update WARN there on every call.
+  resolved="$("$mise" which bun 2>/dev/null || true)"
+  [ -n "$resolved" ] || return 0
+  shim="${MISE_DATA_DIR:-${XDG_DATA_HOME:-${HOME}/.local/share}/mise}/shims/bun"
+  if [ -x "$shim" ]; then
+    printf '%s' "$shim"
+  else
+    printf '%s' "$resolved"
+  fi
+  return 0
+}
+
+# Find Bun on PATH, then via a version manager, then in the usual install locations.
 #
 # This survived the port because it is the BOOTSTRAP's job, not the CLI's: Bun is what compiles the
 # binary, so it has to be found before there is a binary to do the finding. Herdr spawns plugin
@@ -34,6 +68,9 @@ COLLIE_BIN="${PLUGIN_ROOT}/bin/collie"
 # The candidate list is not this file's own. It is the canonical one `cli/sys.ts` defines
 # (`toolCandidates`) and `cli/remote.ts`'s `TOOL_LOOKUP` also spells; `cli/sys.test.ts` parses
 # this function and fails when the three disagree. Add a candidate in all three or in none.
+#
+# Order: PATH, explicit $BUN_INSTALL, mise (outranks a stale `~/.bun`), then the canonical list.
+# The two lookups ahead of the list are not candidates, so the list stays canonical.
 #
 # An empty result is still fine: the caller below reports it and exits.
 resolve_bun() {
@@ -47,6 +84,15 @@ resolve_bun() {
         return 0
         ;;
     esac
+  fi
+  if [ -n "${BUN_INSTALL:-}" ] && [ -x "${BUN_INSTALL}/bin/bun" ]; then
+    printf '%s' "${BUN_INSTALL}/bin/bun"
+    return 0
+  fi
+  candidate="$(resolve_mise_bun)"
+  if [ -n "$candidate" ]; then
+    printf '%s' "$candidate"
+    return 0
   fi
   for candidate in \
     "${BUN_INSTALL:-${HOME}/.bun}/bin/bun" \
