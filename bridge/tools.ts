@@ -19,10 +19,32 @@ import { HOST, type Host } from "./host.ts";
 // ABSOLUTE entries only. An empty or relative PATH entry means "the current directory" — resolving
 // a tool through it would let whatever directory we happen to be in supply `git`.
 
-/** Absolute directories searched after PATH. `home` is the resolved home dir, never `$HOME` raw. */
-export function fallbackDirs(home: string): string[] {
+/** An override that is present but empty names no location — treat it as unset, as the shell does. */
+function nonEmpty(value: string | undefined): string | undefined {
+  return value !== undefined && value.length > 0 ? value : undefined;
+}
+
+/**
+ * mise's shims dir: the stable name for tools it keeps under unguessable versioned paths, so a
+ * mise-only Bun is found here as the bootstrap finds it. MISE_DATA_DIR, then XDG_DATA_HOME.
+ */
+export function miseShimsDir(env: Record<string, string | undefined>, home: string): string {
+  const dataHome = nonEmpty(env.XDG_DATA_HOME) ?? join(home, ".local", "share");
+  return join(nonEmpty(env.MISE_DATA_DIR) ?? join(dataHome, "mise"), "shims");
+}
+
+/**
+ * Absolute directories searched after PATH. `home` is the resolved home dir, never `$HOME` raw.
+ * `env` only feeds {@link miseShimsDir}'s overrides, hence optional.
+ */
+export function fallbackDirs(
+  home: string,
+  env: Record<string, string | undefined> = {},
+): string[] {
   return [
     join(home, ".local", "bin"),
+    // Ahead of `~/.bun/bin`, so a mise Bun outranks a stale curl install.
+    miseShimsDir(env, home),
     join(home, ".bun", "bin"),
     join(home, ".cargo", "bin"),
     "/usr/local/bin",
@@ -47,18 +69,21 @@ export function fallbackDirs(home: string): string[] {
  * `bridge/config.ts`'s `defaultSocketPath` takes its own platform: it makes the Windows branch
  * reachable from a test on any machine. We do not test on Windows hardware, so an injected host is
  * the only way this branch is ever exercised.
+ *
+ * `env` comes last and is optional for the reason {@link fallbackDirs} gives.
  */
 export function searchDirs(
   path: string | undefined,
   home: string,
   host: Host = HOST,
+  env: Record<string, string | undefined> = {},
 ): string[] {
   const fromPath = (path ?? "")
     .split(host.path.delimiter)
     .map((d) => d.trim())
     .filter((d) => d.length > 0 && host.path.isAbsolute(d));
   const seen = new Set<string>();
-  return [...fromPath, ...fallbackDirs(home)].filter((d) => {
+  return [...fromPath, ...fallbackDirs(home, env)].filter((d) => {
     if (seen.has(d)) return false;
     seen.add(d);
     return true;
@@ -171,7 +196,7 @@ export function findTool(
   }
   return findIn(
     name,
-    searchDirs(envGet(env, "PATH", host), home, host),
+    searchDirs(envGet(env, "PATH", host), home, host, env),
     isExecutableFile,
     toolExts(env, host),
   );
