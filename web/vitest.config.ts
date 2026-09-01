@@ -72,7 +72,13 @@ export default defineConfig({
           environment: "jsdom",
           // `msw.ts` first and then the document half, so `setup.ts` can re-export the server it
           // already stood up rather than standing up a second one.
-          setupFiles: [...shared.setupFiles, "./src/test/setup.ts"],
+          // node-localstorage.ts ahead of both: it repairs Node 26's shadowed storage globals before
+          // any `@/lib/*` module reads them at import time.
+          setupFiles: [
+            "./src/test/node-localstorage.ts",
+            ...shared.setupFiles,
+            "./src/test/setup.ts",
+          ],
           include: ["src/**/*.{test,spec}.{ts,tsx}"],
           exclude: [LOGIC],
         },
