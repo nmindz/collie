@@ -22,7 +22,62 @@ set -euo pipefail
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COLLIE_BIN="${PLUGIN_ROOT}/bin/collie"
 
-# Find Bun on PATH, then in the usual install locations.
+# Bun installed by a version manager (mise), for hosts where that is the ONLY Bun.
+#
+# mise keeps its tools under `installs/<tool>/<version>/bin` — a path nothing can guess, so the fixed
+# list below can never find them. A host whose only Bun comes from mise therefore could not build the
+# binary AT ALL: the bootstrap below reports "bun is not installed" and every Herdr action that runs
+# through it (`[[build]]` on install, `update`) dies right there, on a box where `bun` works fine in
+# the operator's own shell.
+#
+# So ask mise — but find mise the same way we have to find Bun, because the environments this matters
+# in (Herdr actions, launchd) have not sourced the profile line that puts `~/.local/bin` on PATH
+# either.
+#
+# Two things this deliberately does NOT do:
+#   - It does not accept a non-absolute `command -v mise`. `mise activate` installs a shell FUNCTION
+#     named `mise`, so the trap documented for `bun` below applies verbatim.
+#   - It does not take the shim's existence as proof. mise's config is directory-scoped, so a shim
+#     can sit on disk for a tool this directory does not provide; `mise which` is the question that
+#     actually answers "is there a Bun here", and it declines HERE rather than at exec time, halfway
+#     through a build.
+#
+# The shims dir is PREFERRED over the concrete path mise prints, because the version is baked into
+# that path (`…/installs/bun/1.3.14/bin/bun`) and whatever we resolve is exported on PATH below for
+# every child of a long `build` or `update` — a version-pinned directory there goes stale the moment
+# the operator runs `mise up bun`. A shim is a stable name that re-resolves on every exec, and it
+# needs neither mise on PATH nor an activated shell.
+resolve_mise_bun() {
+  local mise="" candidate resolved shim
+  candidate="$(command -v mise 2>/dev/null || true)"
+  case "$candidate" in
+    /*) mise="$candidate" ;;
+  esac
+  if [ -z "$mise" ]; then
+    for candidate in \
+      "${HOME}/.local/bin/mise" \
+      /opt/homebrew/bin/mise \
+      /usr/local/bin/mise; do
+      if [ -x "$candidate" ]; then
+        mise="$candidate"
+        break
+      fi
+    done
+  fi
+  [ -n "$mise" ] || return 0
+  # stderr is dropped: mise writes an unrelated "new version available" WARN there on every call.
+  resolved="$("$mise" which bun 2>/dev/null || true)"
+  [ -n "$resolved" ] || return 0
+  shim="${MISE_DATA_DIR:-${XDG_DATA_HOME:-${HOME}/.local/share}/mise}/shims/bun"
+  if [ -x "$shim" ]; then
+    printf '%s' "$shim"
+  else
+    printf '%s' "$resolved"
+  fi
+  return 0
+}
+
+# Find Bun on PATH, then via a version manager, then in the usual install locations.
 #
 # This survived the port because it is the BOOTSTRAP's job, not the CLI's: Bun is what compiles the
 # binary, so it has to be found before there is a binary to do the finding. Herdr spawns plugin
@@ -31,6 +86,11 @@ COLLIE_BIN="${PLUGIN_ROOT}/bin/collie"
 # and then failed its build, leaving the checkout AHEAD of the web/dist being served while every
 # version string reported the new release — unnoticed across four invocations.
 #
+# Order is deliberate: PATH first, because an activated shell has already answered the question; then
+# $BUN_INSTALL, because it is the operator's explicit override; then a declared version manager; and
+# only then the guess-list — a mise-managed Bun is the one the operator actually uses, so it has to
+# outrank a stale `~/.bun` left behind by an old curl install.
+#
 # An empty result is still fine: the caller below reports it and exits.
 resolve_bun() {
   local candidate
@@ -38,8 +98,16 @@ resolve_bun() {
     printf '%s' "$candidate"
     return 0
   fi
+  if [ -n "${BUN_INSTALL:-}" ] && [ -x "${BUN_INSTALL}/bin/bun" ]; then
+    printf '%s' "${BUN_INSTALL}/bin/bun"
+    return 0
+  fi
+  candidate="$(resolve_mise_bun)"
+  if [ -n "$candidate" ]; then
+    printf '%s' "$candidate"
+    return 0
+  fi
   for candidate in \
-    "${BUN_INSTALL:-${HOME}/.bun}/bin/bun" \
     "${HOME}/.bun/bin/bun" \
     "${HOME}/.local/bin/bun" \
     /usr/local/bin/bun \
