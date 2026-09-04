@@ -605,7 +605,7 @@ export const CONFIG_SETTINGS: readonly ConfigSetting[] = [
     env: "COLLIE_UPDATE_REPO",
     section: "update",
     kind: "string",
-    default: "AltanS/collie",
+    default: "nmindz/collie",
     doc: "The owner/repo releases are taken from. Set it only when you run a fork on purpose.",
   },
   {

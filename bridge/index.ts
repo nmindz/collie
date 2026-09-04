@@ -648,17 +648,13 @@ await updateStore.load();
 
 // The repo the release check + release links point at. Defaults to Collie's own; overridable for a
 // fork (or a synthetic test target) via COLLIE_UPDATE_REPO.
-const updateRepo = process.env.COLLIE_UPDATE_REPO?.trim() || "AltanS/collie";
-// How this Collie is installed — the ONE shared classifier (`cli/install-kind.ts`), probed once at
-// startup because the answer cannot change under a running process (an update restarts the service).
-// The banner spells its commands from this: Herdr actions for a Herdr-managed checkout, the `collie`
-// verbs for everything else (M14/01 §5.3).
-// The version this process is RUNNING, captured once, here, beside the kind — for the same reason
-// the kind is captured once: neither can change under a live process. A package manager can still
-// change the FILES, and `collieVersion` re-reads them on every call, so the difference between this
-// string and a fresh read is the restart-needed signal (M17/02). No new state file.
+const updateRepo = process.env.COLLIE_UPDATE_REPO?.trim() || "nmindz/collie";
+// The version this process is RUNNING, captured once; a fresh `collieVersion` read that differs
+// means the files changed under it and a restart is needed.
 const bootVersion = collieVersion(rootDir);
 
+// How this Collie is installed (`cli/install-kind.ts`), probed once at startup; the banner spells
+// its update commands from it.
 const installKind = classifyInstall(
   probeInstall(
     { ctx: { home: homedir() }, exec: realExec(process.env, homedir()), files: realFiles, link: realLinkFs },

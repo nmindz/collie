@@ -30,7 +30,7 @@
 #
 # Three environment variables steer what it installs:
 #   COLLIE_DIR          where to install. Default: %LOCALAPPDATA%\collie
-#   COLLIE_UPDATE_REPO  which GitHub repository to download from. Default: AltanS/collie
+#   COLLIE_UPDATE_REPO  which GitHub repository to download from. Default: nmindz/collie
 #   COLLIE_TAG          install one exact release tag, for example v1.16.0. A pin skips the tag
 #                       lookup, so the script makes no call to api.github.com.
 # A GitHub token in COLLIE_GITHUB_TOKEN, GH_TOKEN or GITHUB_TOKEN goes only to api.github.com, with
@@ -397,12 +397,12 @@ function Get-CollieCommandName([string]$Exe) {
 
 function Invoke-CollieInstall {
   $repo = "$env:COLLIE_UPDATE_REPO".Trim()
-  if ($repo -eq '') { $repo = "AltanS/collie" }
+  if ($repo -eq '') { $repo = "nmindz/collie" }
   if (-not (Test-CollieRepo $repo)) {
     Stop-CollieInstall "COLLIE_UPDATE_REPO='$repo' is not a GitHub repository name like AltanS/collie." "Set COLLIE_UPDATE_REPO to owner/name, or remove it to take Collie's own releases."
   }
-  if ($repo -cne "AltanS/collie") {
-    Write-CollieLine "WARNING: COLLIE_UPDATE_REPO is set. This installs Collie from github.com/$repo, not from AltanS/collie."
+  if ($repo -cne "nmindz/collie") {
+    Write-CollieLine "WARNING: COLLIE_UPDATE_REPO is set. This installs Collie from github.com/$repo, not from nmindz/collie."
   }
   $dir = "$env:COLLIE_DIR".Trim()
   if ($dir -eq '') {

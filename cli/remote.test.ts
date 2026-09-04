@@ -826,7 +826,7 @@ describe("collie crew add", () => {
     expect(install.script).toContain(`COLLIE_TAG='v${VERSION}'`);
     expect(install.script).toContain("COLLIE_DIR=\"$DIR\"");
     expect(install.script).toContain(`DIR='${REMOTE_HOME}/.local/share/collie'`);
-    expect(text(h.io)).toContain(`installing v${VERSION} from AltanS/collie`);
+    expect(text(h.io)).toContain(`installing v${VERSION} from nmindz/collie`);
     expect(text(h.io)).toContain('✓ "nas" is a member of "the herd"');
   });
 

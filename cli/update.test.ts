@@ -98,7 +98,7 @@ function posixExec(scripted: Scripted = {}): FakeExec {
 // managed checkout is never re-linked.
 
 const GIT = `git -C ${ROOT}`;
-const TAG_REMOTE = "https::https://github.com/AltanS/collie.git";
+const TAG_REMOTE = "https::https://github.com/nmindz/collie.git";
 const DIST = `${ROOT}/web/dist`;
 
 // `git ls-remote --tags` as the remote actually answers: an ANNOTATED tag appears twice, and
@@ -164,7 +164,7 @@ const MANAGED: Scripted["answers"] = [[`${GIT} symbolic-ref -q HEAD`, { code: 1 
  *  `update` refuses to fetch a remote that is not the configured update source, so a fixture with no
  *  origin would be refused before it reached the strategy under test. */
 const ORIGIN: NonNullable<Scripted["answers"]> = [
-  [`${GIT} remote get-url origin`, { stdout: "https://github.com/AltanS/collie.git\n" }],
+  [`${GIT} remote get-url origin`, { stdout: "https://github.com/nmindz/collie.git\n" }],
 ];
 const LINKED: Scripted["answers"] = [[`${GIT} symbolic-ref -q HEAD`, { code: 0, stdout: "refs/heads/main\n" }]];
 const SHALLOW: Scripted["answers"] = [
@@ -705,7 +705,7 @@ describe("updateCheckout", () => {
   test("a non-git checkout names the reinstall command and fails", () => {
     const h = harness({ answers: [[`${GIT} rev-parse --show-prefix`, { code: 128 }]] });
     expect(updateCheckout(h.deps).code).toBe(EXIT.FAIL);
-    expect(h.io.stderr.join("\n")).toContain("herdr plugin install AltanS/collie --yes");
+    expect(h.io.stderr.join("\n")).toContain("herdr plugin install nmindz/collie --yes");
     expect(gitRuns(h.exec)).toEqual([]);
   });
 
@@ -1101,7 +1101,7 @@ describe("the origin assertion", () => {
     expect(await cmdUpdate(h.deps)).toBe(EXIT.FAIL);
     const said = h.io.stderr.join("\n");
     expect(said).toContain("youngsecurity/collie");
-    expect(said).toContain("AltanS/collie");
+    expect(said).toContain("nmindz/collie");
     expect(said).toContain("COLLIE_UPDATE_REPO=youngsecurity/collie");
     expect(said).toContain("docs/upgrading.md");
     // Nothing was fetched and nothing was checked out — the whole point of asserting first.
@@ -1182,7 +1182,7 @@ const apiTags = (...names: string[]) => names.map((name) => ({ name, commit: { s
 
 const manifestDoc = (over: JsonObject = {}) => ({
   schemaVersion: 1,
-  repo: "AltanS/collie",
+  repo: "nmindz/collie",
   tag: `v${NEW}`,
   version: NEW,
   artifacts: [
@@ -1477,7 +1477,7 @@ describe("collie update on a binary install", () => {
       },
     };
     expect(await cmdUpdate(h.deps)).toBe(EXIT.OK);
-    expect(fetched).toEqual([`https://github.com/AltanS/collie/releases/download/v${NEW}/${zip}`]);
+    expect(fetched).toEqual([`https://github.com/nmindz/collie/releases/download/v${NEW}/${zip}`]);
     expect(h.exec.calls).toContain(`/Windows/System32/tar.exe -xf ${INST}/.staging/${zip} -C ${INST}/.staging/x`);
     expect(h.exec.calls.some((c) => c.startsWith("tar ") || c.startsWith("chmod "))).toBe(false);
     expect(h.files.ops).toContain(`mv ${INST}/.staging/x/${payload} ${INST}/versions/${NEW}`);
@@ -1586,7 +1586,7 @@ describe("collie update on a binary install", () => {
     const download = h.deps.net.download;
     h.deps.net = { ...h.deps.net, download: (url, dest) => (fetched.push(url), download(url, dest)) };
     expect(await cmdUpdate(h.deps)).toBe(EXIT.OK);
-    expect(fetched).toEqual([`https://github.com/AltanS/collie/releases/download/v${NEW}/${PAYLOAD}.tar.gz`]);
+    expect(fetched).toEqual([`https://github.com/nmindz/collie/releases/download/v${NEW}/${PAYLOAD}.tar.gz`]);
   });
 
   test("Windows: a release with no `windows-x64` entry says so plainly and changes nothing", async () => {
@@ -1957,7 +1957,7 @@ function stagedHarness(over: StagedOptions = {}): Harness {
       // A worktree of a tag is detached — which is exactly why the layout, not the HEAD, decides
       // that this install stages.
       [`git -C ${root} symbolic-ref -q HEAD`, { code: 1 }],
-      [`git -C ${root} remote get-url origin`, { stdout: "https://github.com/AltanS/collie.git\n" }],
+      [`git -C ${root} remote get-url origin`, { stdout: "https://github.com/nmindz/collie.git\n" }],
     ],
   });
   const seed: SeededFiles = {

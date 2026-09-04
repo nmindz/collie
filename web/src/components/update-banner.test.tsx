@@ -7,7 +7,7 @@ import type { UpdateInfo } from "@/lib/types";
 import { UpdateBanner, updateNotice } from "./update-banner";
 
 // A real, existing Collie release (kept `current` below it so the "available" scenario is honest).
-const RELEASE_URL = "https://github.com/AltanS/collie/releases/tag/v0.10.3";
+const RELEASE_URL = "https://github.com/nmindz/collie/releases/tag/v0.10.3";
 const someUpdate = (over: Partial<UpdateInfo>): UpdateInfo => ({
   current: "0.9.0",
   latest: "0.10.3",
@@ -49,7 +49,7 @@ describe("updateNotice", () => {
   it("names the consent command for a major, and ranks it below a routine release", () => {
     // A major is the one thing the plain update action will NOT take (ADR 0020), so its line carries
     // the `update-major` command rather than leaving the operator to tap update and stay behind.
-    const major = "https://github.com/AltanS/collie/releases/tag/v1.0.0";
+    const major = "https://github.com/nmindz/collie/releases/tag/v1.0.0";
     expect(updateNotice(someUpdate({ majorAvailable: "1.0.0", majorUrl: major }))).toEqual({
       line: "Collie 1.0.0 — a new major",
       href: major,

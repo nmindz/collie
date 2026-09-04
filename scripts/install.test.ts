@@ -185,7 +185,7 @@ function stageRelease(
     `${JSON.stringify(
       {
         schemaVersion: opts.schemaVersion ?? 1,
-        repo: "AltanS/collie",
+        repo: "nmindz/collie",
         tag: `v${opts.version}`,
         version: opts.version,
         artifacts: [

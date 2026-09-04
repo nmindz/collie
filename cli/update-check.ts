@@ -187,7 +187,7 @@ const MIN_BUN = "1.3.14";
  * does not. Never prose: a remedy is the one command that clears the check, and a paragraph in that
  * field is a sentence pretending to be a command.
  *
- * The REASON is never touched. "v1.6.0 resolves on github.com/AltanS/collie" is true however the
+ * The REASON is never touched. "v1.6.0 resolves on github.com/nmindz/collie" is true however the
  * update gets applied, and an operator is better served knowing a release exists.
  */
 function packagedRemedy(check: PreflightCheck, root: string): PreflightCheck {

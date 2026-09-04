@@ -21,7 +21,7 @@
 # gives options to the shell, not to this script.
 set -eu
 
-REPO="${COLLIE_UPDATE_REPO:-AltanS/collie}"
+REPO="${COLLIE_UPDATE_REPO:-nmindz/collie}"
 DIR="${COLLIE_DIR:-$HOME/.local/share/collie}"
 BETA=0
 

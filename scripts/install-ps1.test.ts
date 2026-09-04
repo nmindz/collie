@@ -182,7 +182,7 @@ const SYSTEM_ROOT = process.env.SystemRoot ?? process.env.SYSTEMROOT ?? "C:\\Win
 const POWERSHELL = join(SYSTEM_ROOT, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
 /** Windows' own bsdtar, which writes a zip. A GNU tar from Git, often first on PATH, cannot. */
 const TAR = join(SYSTEM_ROOT, "System32", "tar.exe");
-const REPO = "AltanS/collie";
+const REPO = "nmindz/collie";
 const PLATFORM = "windows-x64";
 /** PowerShell's own caches. Windows PowerShell writes them when it loads a module (Expand-Archive). */
 const POWERSHELL_CACHE = /[\\/]Microsoft[\\/]Windows[\\/]PowerShell[\\/]/i;
@@ -682,7 +682,7 @@ describe.skipIf(!IS_WINDOWS)("scripts/install.ps1 on Windows, against a local mi
     expect(norm(realpathSync(join(dir, "current")))).toBe(norm(realpathSync(join(dir, "versions", v1))));
   }, 60_000);
 
-  test("a repository other than AltanS/collie is named in a loud line", async () => {
+  test("a repository other than nmindz/collie is named in a loud line", async () => {
     const b = box();
     const r = await install(b, mirror, { env: { COLLIE_UPDATE_REPO: "someone/collie-fork" } });
     expect(r.code).toBe(0);
@@ -746,7 +746,7 @@ describe.skipIf(!IS_WINDOWS)("scripts/install.ps1 on Windows, against a local mi
     try {
       const r = await install(b, mirror);
       expectFailed(r);
-      expect(r.out).toContain("none of the newest 5 releases of AltanS/collie carries a Windows build yet");
+      expect(r.out).toContain("none of the newest 5 releases of nmindz/collie carries a Windows build yet");
       expect(lastLine(r.out)).toContain("COLLIE_TAG");
       expect(r.out).not.toContain("HTTP 404");
       expect(existsSync(b.dir)).toBe(false);
