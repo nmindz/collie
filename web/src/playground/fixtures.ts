@@ -756,7 +756,7 @@ export const updateRestart: UpdateInfo = {
 export const updateRelease: UpdateInfo = {
   current: "0.31.0",
   latest: "0.32.1",
-  latestUrl: "https://github.com/AltanS/collie/releases/tag/v0.32.1",
+  latestUrl: "https://github.com/nmindz/collie/releases/tag/v0.32.1",
   releaseAvailable: true,
   majorAvailable: null,
   majorUrl: null,
@@ -767,10 +767,10 @@ export const updateRelease: UpdateInfo = {
 export const updateMajor: UpdateInfo = {
   current: "0.31.0",
   latest: "0.32.1",
-  latestUrl: "https://github.com/AltanS/collie/releases/tag/v0.32.1",
+  latestUrl: "https://github.com/nmindz/collie/releases/tag/v0.32.1",
   releaseAvailable: false,
   majorAvailable: "1.0.0",
-  majorUrl: "https://github.com/AltanS/collie/releases/tag/v1.0.0",
+  majorUrl: "https://github.com/nmindz/collie/releases/tag/v1.0.0",
   bridgeStale: false,
   checkedAt: TS - 6 * MIN,
 };

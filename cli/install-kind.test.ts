@@ -131,34 +131,34 @@ describe("publishedBinary — the PATH name is a pointer (ADR 0021)", () => {
 describe("where updates come from", () => {
   test("parseGithubRemote accepts every spelling git hands out, and only github.com", () => {
     for (const url of [
-      "https://github.com/AltanS/collie.git",
-      "https://github.com/AltanS/collie",
-      "git@github.com:AltanS/collie.git",
-      "ssh://git@github.com/AltanS/collie.git",
-      "https://github.com/AltanS/collie/",
+      "https://github.com/nmindz/collie.git",
+      "https://github.com/nmindz/collie",
+      "git@github.com:nmindz/collie.git",
+      "ssh://git@github.com/nmindz/collie.git",
+      "https://github.com/nmindz/collie/",
     ]) {
-      expect(parseGithubRemote(url)).toBe("AltanS/collie");
+      expect(parseGithubRemote(url)).toBe("nmindz/collie");
     }
     expect(parseGithubRemote("/srv/mirrors/collie.git")).toBeNull();
-    expect(parseGithubRemote("https://gitlab.com/AltanS/collie.git")).toBeNull();
+    expect(parseGithubRemote("https://gitlab.com/nmindz/collie.git")).toBeNull();
     expect(parseGithubRemote("")).toBeNull();
   });
 
   test("COLLIE_UPDATE_REPO is the one override, and Collie's own repo is the default", () => {
-    expect(updateRepoOf({})).toBe("AltanS/collie");
+    expect(updateRepoOf({})).toBe("nmindz/collie");
     expect(updateRepoOf({ COLLIE_UPDATE_REPO: "  my/collie  " })).toBe("my/collie");
-    expect(updateRepoOf({ COLLIE_UPDATE_REPO: "" })).toBe("AltanS/collie");
+    expect(updateRepoOf({ COLLIE_UPDATE_REPO: "" })).toBe("nmindz/collie");
   });
 
   test("originMatches normalises both sides — and an unreadable origin never matches", () => {
     const exec = fakeExec({
-      answers: [["git -C /r remote get-url origin", { stdout: "git@github.com:AltanS/Collie.git\n" }]],
+      answers: [["git -C /r remote get-url origin", { stdout: "git@github.com:nmindz/Collie.git\n" }]],
     });
     const origin = originOf(exec, "/r");
-    expect(origin).toEqual({ kind: "repo", repo: "AltanS/Collie" });
-    expect(originMatches(origin, "AltanS/collie")).toBe(true);
+    expect(origin).toEqual({ kind: "repo", repo: "nmindz/Collie" });
+    expect(originMatches(origin, "nmindz/collie")).toBe(true);
     expect(originMatches(origin, "youngsecurity/collie")).toBe(false);
-    expect(originMatches({ kind: "unresolvable" }, "AltanS/collie")).toBe(false);
+    expect(originMatches({ kind: "unresolvable" }, "nmindz/collie")).toBe(false);
     // A non-GitHub remote can still be self-consistent for an operator who points both at it.
     expect(originMatches({ kind: "other", url: "/srv/collie.git" }, "/srv/collie")).toBe(true);
   });

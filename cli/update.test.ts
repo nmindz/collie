@@ -129,7 +129,7 @@ const MANAGED: Scripted["answers"] = [[`${GIT} symbolic-ref -q HEAD`, { code: 1 
  *  `update` refuses to fetch a remote that is not the configured update source, so a fixture with no
  *  origin would be refused before it reached the strategy under test. */
 const ORIGIN: NonNullable<Scripted["answers"]> = [
-  [`${GIT} remote get-url origin`, { stdout: "https://github.com/AltanS/collie.git\n" }],
+  [`${GIT} remote get-url origin`, { stdout: "https://github.com/nmindz/collie.git\n" }],
 ];
 const LINKED: Scripted["answers"] = [[`${GIT} symbolic-ref -q HEAD`, { code: 0, stdout: "refs/heads/main\n" }]];
 const SHALLOW: Scripted["answers"] = [
@@ -641,7 +641,7 @@ describe("updateCheckout", () => {
   test("a non-git checkout names the reinstall command and fails", () => {
     const h = harness({ answers: [[`${GIT} rev-parse --git-dir`, { code: 128 }]] });
     expect(updateCheckout(h.deps).code).toBe(EXIT.FAIL);
-    expect(h.io.stderr.join("\n")).toContain("herdr plugin install AltanS/collie --yes");
+    expect(h.io.stderr.join("\n")).toContain("herdr plugin install nmindz/collie --yes");
     expect(gitRuns(h.exec)).toEqual([]);
   });
 
@@ -918,7 +918,7 @@ describe("the origin assertion", () => {
     expect(await cmdUpdate(h.deps)).toBe(EXIT.FAIL);
     const said = h.io.stderr.join("\n");
     expect(said).toContain("youngsecurity/collie");
-    expect(said).toContain("AltanS/collie");
+    expect(said).toContain("nmindz/collie");
     expect(said).toContain("COLLIE_UPDATE_REPO=youngsecurity/collie");
     expect(said).toContain("docs/upgrading.md");
     // Nothing was fetched and nothing was checked out — the whole point of asserting first.
@@ -990,7 +990,7 @@ const apiTags = (...names: string[]) => names.map((name) => ({ name, commit: { s
 
 const manifestDoc = (over: JsonObject = {}) => ({
   schemaVersion: 1,
-  repo: "AltanS/collie",
+  repo: "nmindz/collie",
   tag: `v${NEW}`,
   version: NEW,
   artifacts: [
@@ -1418,7 +1418,7 @@ function stagedHarness(over: StagedOptions = {}): Harness {
       // A worktree of a tag is detached — which is exactly why the layout, not the HEAD, decides
       // that this install stages.
       [`git -C ${root} symbolic-ref -q HEAD`, { code: 1 }],
-      [`git -C ${root} remote get-url origin`, { stdout: "https://github.com/AltanS/collie.git\n" }],
+      [`git -C ${root} remote get-url origin`, { stdout: "https://github.com/nmindz/collie.git\n" }],
     ],
   });
   const seed: SeededFiles = {

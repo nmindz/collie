@@ -558,7 +558,7 @@ await updateStore.load();
 
 // The repo the release check + release links point at. Defaults to Collie's own; overridable for a
 // fork (or a synthetic test target) via COLLIE_UPDATE_REPO.
-const updateRepo = process.env.COLLIE_UPDATE_REPO?.trim() || "AltanS/collie";
+const updateRepo = process.env.COLLIE_UPDATE_REPO?.trim() || "nmindz/collie";
 // How this Collie is installed — the ONE shared classifier (`cli/install-kind.ts`), probed once at
 // startup because the answer cannot change under a running process (an update restarts the service).
 // The banner spells its commands from this: Herdr actions for a Herdr-managed checkout, the `collie`

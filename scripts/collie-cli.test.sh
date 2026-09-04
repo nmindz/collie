@@ -1341,7 +1341,7 @@ PLAIN="${U_DIR}/plain"
 mkdir -p "$PLAIN"
 printf 'id = "herdr.collie"\nversion = "9.9.9"\n' > "${PLAIN}/herdr-plugin.toml"
 if upd "$PLAIN" "$BIN" update; then fail "update on a non-git tree reported success"; fi
-assert_contains "$STDERR" "herdr plugin install AltanS/collie --yes"
+assert_contains "$STDERR" "herdr plugin install nmindz/collie --yes"
 case "$(cat "$U_CALLS")" in
   *_apply-update*) fail "a checkout that could not advance still tried to rebuild" ;;
 esac
@@ -1352,7 +1352,7 @@ esac
 MANAGED_BEFORE_FORK="$(git -C "$MANAGED" rev-parse HEAD)"
 if run_stripped HOME="${TMP_ROOT}/update-home" HERDR_PLUGIN_CONFIG_DIR="${TMP_ROOT}/update-config" \
   PATH="${U_BIN}:${BASE_PATH}" COLLIE_MUX=herdr COLLIE_PORT="$PORT" COLLIE_PLUGIN_ROOT="$MANAGED" \
-  COLLIE_UPDATE_REPO="AltanS/collie" "$BIN" update; then
+  COLLIE_UPDATE_REPO="nmindz/collie" "$BIN" update; then
   fail "update did not refuse a checkout whose origin is not the update source"
 fi
 assert_contains "$STDERR" "docs/upgrading.md"

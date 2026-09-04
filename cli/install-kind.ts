@@ -179,7 +179,7 @@ export function detectInstall(deps: {
 // the SOURCE on a binary install (it selects the tags endpoint and every constructed download URL)
 // and an ASSERTION on the git paths (M14/01 §3.5, M14/02 amendment §1–2).
 
-export const DEFAULT_UPDATE_REPO = "AltanS/collie";
+export const DEFAULT_UPDATE_REPO = "nmindz/collie";
 
 /** The `owner/repo` releases come from — `COLLIE_UPDATE_REPO`, or Collie's own repo. */
 export function updateRepoOf(env: { readonly COLLIE_UPDATE_REPO?: string | undefined }): string {

@@ -67,7 +67,7 @@ const df = (availableKb: number): string =>
 const HEALTHY: NonNullable<Scripted["answers"]> = [
   [`${GIT} rev-parse --git-dir`, { stdout: ".git\n" }],
   [`${GIT} symbolic-ref -q HEAD`, { code: 1 }],
-  [`${GIT} remote get-url origin`, { stdout: "https://github.com/AltanS/collie.git\n" }],
+  [`${GIT} remote get-url origin`, { stdout: "https://github.com/nmindz/collie.git\n" }],
   [`${GIT} status --porcelain --untracked-files=no`, { stdout: "" }],
   [`${GIT} ls-remote --tags`, { stdout: LS_REMOTE }],
   [`${GIT} rev-parse HEAD`, { stdout: "cccccccc\n" }],
@@ -397,7 +397,7 @@ describe("preflight — the upstream check", () => {
       await preflight(
         harness({
           answers: [
-            [`${GIT} remote get-url origin`, { stdout: "git@github.com:AltanS/collie.git\n" }],
+            [`${GIT} remote get-url origin`, { stdout: "git@github.com:nmindz/collie.git\n" }],
             [
               `${GIT} ls-remote --tags`,
               { code: 128, stderr: "git@github.com: Permission denied (publickey).\nfatal: Could not read from remote repository.\n" },
@@ -414,11 +414,11 @@ describe("preflight — the upstream check", () => {
 
   test("a read-only tag listing needs no credential: an ssh origin is listed over https, with a timeout", async () => {
     const h = harness({
-      answers: [[`${GIT} remote get-url origin`, { stdout: "git@github.com:AltanS/collie.git\n" }]],
+      answers: [[`${GIT} remote get-url origin`, { stdout: "git@github.com:nmindz/collie.git\n" }]],
     });
     await preflight(h.deps);
     const listing = h.exec.calls.find((c) => c.includes("ls-remote"))!;
-    expect(listing).toBe(`${GIT} ls-remote --tags https://github.com/AltanS/collie.git`);
+    expect(listing).toBe(`${GIT} ls-remote --tags https://github.com/nmindz/collie.git`);
     expect(h.exec.timeouts.find((t) => t.call.includes("ls-remote"))?.ms).toBe(15_000);
   });
 
@@ -459,7 +459,7 @@ describe("preflight — the upstream check", () => {
     );
     expect(check.verdict).toBe("red");
     expect(check.reason).toContain("github.com/fork/collie");
-    expect(check.reason).toContain("github.com/AltanS/collie");
+    expect(check.reason).toContain("github.com/nmindz/collie");
     expect(check.remedy).toContain("COLLIE_UPDATE_REPO=fork/collie");
   });
 });

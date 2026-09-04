@@ -428,7 +428,7 @@ const LS_REMOTE_TIMEOUT_MS = 15_000;
  *
  * Listing the tags of a public repository must not depend on a credential. The bridge runs as a
  * systemd user service with no access to the operator's SSH agent, so `git ls-remote origin` on a
- * checkout whose origin is `git@github.com:AltanS/collie.git` fails with "Permission denied
+ * checkout whose origin is `git@github.com:nmindz/collie.git` fails with "Permission denied
  * (publickey)" — a red preflight that has nothing to do with whether an update could succeed.
  * A GitHub SSH remote is therefore listed over anonymous HTTPS instead. Every other URL is used
  * exactly as git reports it: a self-hosted mirror or a local path is not ours to rewrite.

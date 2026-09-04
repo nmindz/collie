@@ -246,7 +246,7 @@ COLLIE_HOST="127.0.0.1"
     Update-CollieCheckout | Out-Null
     throw "a non-git checkout was accepted"
   } catch {
-    Assert-Contains $_.Exception.Message "herdr plugin install AltanS/collie --yes" "non-git update recovery"
+    Assert-Contains $_.Exception.Message "herdr plugin install nmindz/collie --yes" "non-git update recovery"
   }
   $script:PluginRoot = $originalPluginRoot
 

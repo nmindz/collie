@@ -428,7 +428,7 @@ function Test-CollieManagedCheckout {
 
 function Update-CollieCheckout {
   if (-not (Test-CollieGitCommand @("rev-parse", "--git-dir"))) {
-    throw "not a git checkout - refresh with: herdr plugin install AltanS/collie --yes"
+    throw "not a git checkout - refresh with: herdr plugin install nmindz/collie --yes"
   }
 
   if (-not (Test-CollieManagedCheckout)) {

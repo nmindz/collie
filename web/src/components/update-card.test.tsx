@@ -79,7 +79,7 @@ const GREEN_WITH_ONE_AMBER: PreflightReport = {
 const info = (over: Partial<UpdateInfo> = {}): UpdateInfo => ({
   current: "1.3.0",
   latest: "1.4.0",
-  latestUrl: "https://github.com/AltanS/collie/releases/tag/v1.4.0",
+  latestUrl: "https://github.com/nmindz/collie/releases/tag/v1.4.0",
   releaseAvailable: true,
   majorAvailable: null,
   majorUrl: null,

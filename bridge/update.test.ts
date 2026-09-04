@@ -344,7 +344,7 @@ function makeMonitor(over: Partial<UpdateMonitorDeps> = {}) {
   // rather than the clock. `tick` moves it forward within the same morning unless a test says otherwise.
   let clock = new Date(2026, 0, 15, 10, 0, 0).getTime();
   const monitor = new UpdateMonitor({
-    repo: "AltanS/collie",
+    repo: "nmindz/collie",
     current: "0.11.0",
     installKind: "detached-checkout",
     startupStamp: "STAMP@boot",
@@ -372,7 +372,7 @@ describe("UpdateMonitor", () => {
     await monitor.checkRelease();
     expect(monitor.status()).toMatchObject({
       latest: "0.10.3",
-      latestUrl: "https://github.com/AltanS/collie/releases/tag/v0.10.3",
+      latestUrl: "https://github.com/nmindz/collie/releases/tag/v0.10.3",
       releaseAvailable: true,
     });
     expect(monitor.status().checkedAt).not.toBeNull();
@@ -395,7 +395,7 @@ describe("UpdateMonitor", () => {
       latest: "0.32.0",
       releaseAvailable: true,
       majorAvailable: "1.0.1",
-      majorUrl: "https://github.com/AltanS/collie/releases/tag/v1.0.1",
+      majorUrl: "https://github.com/nmindz/collie/releases/tag/v1.0.1",
     });
   });
 
@@ -422,7 +422,7 @@ describe("UpdateMonitor", () => {
     await monitor.checkRelease();
     expect(monitor.status()).toMatchObject({
       latest: "1.0.0-beta.45",
-      latestUrl: "https://github.com/AltanS/collie/releases/tag/v1.0.0-beta.45",
+      latestUrl: "https://github.com/nmindz/collie/releases/tag/v1.0.0-beta.45",
       releaseAvailable: true,
       majorAvailable: null,
     });
@@ -460,8 +460,8 @@ describe("UpdateMonitor", () => {
   });
 
   it("githubReleaseUrl reconstructs the vX.Y.Z tag page", () => {
-    expect(githubReleaseUrl("AltanS/collie", "0.10.3")).toBe(
-      "https://github.com/AltanS/collie/releases/tag/v0.10.3",
+    expect(githubReleaseUrl("nmindz/collie", "0.10.3")).toBe(
+      "https://github.com/nmindz/collie/releases/tag/v0.10.3",
     );
   });
 
@@ -625,7 +625,7 @@ describe("parseTagsResponse", () => {
 describe("parseReleaseManifest", () => {
   const doc = {
     schemaVersion: 1,
-    repo: "AltanS/collie",
+    repo: "nmindz/collie",
     tag: "v1.1.0",
     version: "1.1.0",
     artifacts: [

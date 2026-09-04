@@ -58,7 +58,7 @@ import {
 // Herdr plugin, so the checkout on disk IS the plugin, and it arrives in one of TWO shapes —
 //
 //   `git clone` + `herdr plugin link`   → a normal clone, ON A BRANCH, full history
-//   `herdr plugin install AltanS/collie` → `git init` + `fetch --depth 1` + `checkout --detach`,
+//   `herdr plugin install nmindz/collie` → `git init` + `fetch --depth 1` + `checkout --detach`,
 //                                          i.e. DETACHED and SHALLOW, no remote-tracking refs
 //
 // — and a bare `git pull --ff-only` has nothing to pull into in the second, which is why every
@@ -517,7 +517,7 @@ export function updateCheckout(
 
   if (!isGitCheckout(deps.exec, root)) {
     deps.io.err(`error: ${root} is not a git checkout — refresh it with:`);
-    deps.io.err("       herdr plugin install AltanS/collie --yes");
+    deps.io.err("       herdr plugin install nmindz/collie --yes");
     return { code: EXIT.FAIL, moved: false, higher: null };
   }
 
@@ -892,7 +892,7 @@ export async function cmdUpdate(deps: UpdateDeps, args: readonly string[] = []):
   if (install.kind === "unknown") {
     deps.io.err(`error: cannot tell how this Collie was installed (${unknownEvidence(deps, install.why)}).`);
     deps.io.err("       `collie update` will not guess. A git checkout refreshes with:");
-    deps.io.err("       herdr plugin install AltanS/collie --yes");
+    deps.io.err("       herdr plugin install nmindz/collie --yes");
     deps.io.err("       A downloaded install — and a staged checkout — lives under a `versions/` layout");
     deps.io.err("       with a `current` symlink beside it; see docs/install.md.");
     return EXIT.FAIL;
@@ -1602,7 +1602,7 @@ async function updateStagedCheckout(
 
   if (!isGitCheckout(deps.exec, git)) {
     deps.io.err(`error: ${git} is not a git checkout — refresh it with:`);
-    deps.io.err("       herdr plugin install AltanS/collie --yes");
+    deps.io.err("       herdr plugin install nmindz/collie --yes");
     return EXIT.FAIL;
   }
   // BEFORE any fetch. See {@link assertOrigin}: a fork's tags are not this install's to take.
